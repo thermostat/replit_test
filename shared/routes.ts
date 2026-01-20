@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertGroupSchema, groups } from './schema';
+import { insertGroupSchema, groups, joinRequests, insertJoinRequestSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -10,6 +10,9 @@ export const errorSchemas = {
     message: z.string(),
   }),
   internal: z.object({
+    message: z.string(),
+  }),
+  unauthorized: z.object({
     message: z.string(),
   }),
 };
@@ -38,6 +41,7 @@ export const api = {
       responses: {
         201: z.custom<typeof groups.$inferSelect>(),
         400: errorSchemas.validation,
+        403: errorSchemas.unauthorized,
       },
     },
     update: {
@@ -48,6 +52,7 @@ export const api = {
         200: z.custom<typeof groups.$inferSelect>(),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
+        403: errorSchemas.unauthorized,
       },
     },
     delete: {
@@ -56,6 +61,35 @@ export const api = {
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        403: errorSchemas.unauthorized,
+      },
+    },
+    requestJoin: {
+      method: 'POST' as const,
+      path: '/api/groups/:id/join',
+      input: z.object({ email: z.string().email() }),
+      responses: {
+        201: z.custom<typeof joinRequests.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    listRequests: {
+      method: 'GET' as const,
+      path: '/api/groups/:id/requests',
+      responses: {
+        200: z.array(z.custom<typeof joinRequests.$inferSelect>()),
+        403: errorSchemas.unauthorized,
+      },
+    },
+  },
+  auth: {
+    user: {
+      method: 'GET' as const,
+      path: '/api/auth/user',
+      responses: {
+        200: z.any(), // User type from auth model
+        401: z.object({ message: z.string() }),
       },
     },
   },

@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { groups, type Group, type InsertGroup, type UpdateGroupRequest } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { groups, joinRequests, type Group, type InsertGroup, type UpdateGroupRequest, type JoinRequest, type InsertJoinRequest } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   getGroups(): Promise<Group[]>;
@@ -8,6 +8,9 @@ export interface IStorage {
   createGroup(group: InsertGroup): Promise<Group>;
   updateGroup(id: number, updates: UpdateGroupRequest): Promise<Group>;
   deleteGroup(id: number): Promise<void>;
+  
+  createJoinRequest(request: InsertJoinRequest): Promise<JoinRequest>;
+  getJoinRequests(groupId: number): Promise<JoinRequest[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -35,6 +38,15 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGroup(id: number): Promise<void> {
     await db.delete(groups).where(eq(groups.id, id));
+  }
+
+  async createJoinRequest(request: InsertJoinRequest): Promise<JoinRequest> {
+    const [jr] = await db.insert(joinRequests).values(request).returning();
+    return jr;
+  }
+
+  async getJoinRequests(groupId: number): Promise<JoinRequest[]> {
+    return await db.select().from(joinRequests).where(eq(joinRequests.groupId, groupId));
   }
 }
 
