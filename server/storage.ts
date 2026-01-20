@@ -1,38 +1,41 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { groups, type Group, type InsertGroup, type UpdateGroupRequest } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getGroups(): Promise<Group[]>;
+  getGroup(id: number): Promise<Group | undefined>;
+  createGroup(group: InsertGroup): Promise<Group>;
+  updateGroup(id: number, updates: UpdateGroupRequest): Promise<Group>;
+  deleteGroup(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getGroups(): Promise<Group[]> {
+    return await db.select().from(groups);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getGroup(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createGroup(insertGroup: InsertGroup): Promise<Group> {
+    const [group] = await db.insert(groups).values(insertGroup).returning();
+    return group;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateGroup(id: number, updates: UpdateGroupRequest): Promise<Group> {
+    const [updated] = await db.update(groups)
+      .set(updates)
+      .where(eq(groups.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteGroup(id: number): Promise<void> {
+    await db.delete(groups).where(eq(groups.id, id));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
