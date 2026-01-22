@@ -44,9 +44,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </Link>
               ))}
-              <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-                <Link href="/create">Start a Circle</Link>
-              </Button>
             </div>
 
             {/* Mobile Nav */}
